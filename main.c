@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <windows.h>
 #include <conio.h>
 #include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <stdbool.h>
 #include <string.h>
 #define realwidth 1000
@@ -13,7 +15,7 @@
 #include "AI.h"
 #include "Create.h"
 #include "MoveAndRedo.h"
-int e=0,f=0,p,x=0,player=1,totalmoves=0,maxmoves=0,dim=0,computer,starttime,endtime,diftime = 0,cI=0,cO=0;
+int e=0,f=0,p,x=0,player=1,totalmoves=0,maxmoves=0,dim=0,computer,starttime,endtime,diftime = 0,cI=0,cO=0,cII=0;
 char game=0,ss[1],sG='0';
 struct{
     char name[13];
@@ -39,10 +41,17 @@ SDL_Texture *saveicon;
 SDL_Texture *returnbutton;
 SDL_Surface *logoimg;
 SDL_Texture *logo;
+Mix_Music *backgroundmusic;
 void initSDL(){
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+
+
     TTF_Init();
     IMG_Init(IMG_INIT_PNG | IMG_INIT_PNG);
+
+    Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,2048);
+
+    backgroundmusic = Mix_LoadMUS("RAF - Self Control - (1984).mp3");
 
     window = SDL_CreateWindow("dots and boxes",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,realwidth,height,SDL_WINDOW_SHOWN);
 
@@ -64,6 +73,8 @@ void initSDL(){
     saveicon = SDL_CreateTextureFromSurface(renderer,saveimg);
     returnbutton = SDL_CreateTextureFromSurface(renderer,returnbuttonimg);
     logo = SDL_CreateTextureFromSurface(renderer,logoimg);
+    Mix_PlayMusic(backgroundmusic,-1);
+
 }
 
 void killSDL(){
@@ -84,6 +95,8 @@ void killSDL(){
     TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    Mix_FreeMusic(backgroundmusic);
+    Mix_CloseAudio();
     IMG_Quit();
     TTF_Quit();
     SDL_Quit();
@@ -1269,6 +1282,7 @@ void loadGame(){
             case SDL_QUIT:
                     quit = true;
                     killSDL();
+
                     return;
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -1518,7 +1532,7 @@ void oneNewGame(){
             dim = 15;
             break;
         default:
-            oneNewGame();
+            return oneNewGame();
 
     }
 }
@@ -1586,7 +1600,7 @@ void twoNewGame(){
             dim = 15;
             break;
         default:
-            twoNewGame();
+            return twoNewGame();
             break;
     }
 }
@@ -1630,7 +1644,7 @@ void newGame(){
     }
     switch(game){
     case '0':
-        main(NULL,NULL);
+        return main(NULL,NULL);
         break;
     case '1':
         computer = 1;
@@ -1641,7 +1655,7 @@ void newGame(){
         twoNewGame();
         break;
     default:
-        newGame();
+        return newGame();
         break;
     }
 }
@@ -1664,8 +1678,19 @@ void settings(){
         SDL_RenderCopy(renderer,logo,NULL,&pos);
         SDL_DestroyTexture(logo);
 
+        SDL_Surface *soundbuttonimg = IMG_Load("togglesound - Copy.png");
+        if(cII){SDL_FreeSurface(soundbuttonimg);soundbuttonimg = IMG_Load("togglesound.png");}
+        SDL_Texture *soundbutton = SDL_CreateTextureFromSurface(renderer,soundbuttonimg);
+        SDL_FreeSurface(soundbuttonimg);
+        pos.x = 400;
+        pos.y = 320;
+        pos.w = 200;
+        pos.h = 60;
+        SDL_RenderCopy(renderer,soundbutton,NULL,&pos);
+        SDL_DestroyTexture(soundbutton);
+
         SDL_Surface *settings11iconimg = IMG_Load("settings11 - Copy.png");
-        if(cI){settings11iconimg = IMG_Load("settings11.png");}
+        if(cI){SDL_FreeSurface(settings11iconimg);settings11iconimg = IMG_Load("settings11.png");}
         SDL_Texture *settings11icon = SDL_CreateTextureFromSurface(renderer,settings11iconimg);
         SDL_FreeSurface(settings11iconimg);
         pos.x = 190;
@@ -1676,7 +1701,7 @@ void settings(){
         SDL_DestroyTexture(settings11icon);
 
         SDL_Surface *settings12iconimg = IMG_Load("settings12.png");
-        if(cI){settings12iconimg = IMG_Load("settings12 - Copy.png");}
+        if(cI){SDL_FreeSurface(settings11iconimg);settings12iconimg = IMG_Load("settings12 - Copy.png");}
         SDL_Texture *settings12icon = SDL_CreateTextureFromSurface(renderer,settings12iconimg);
         SDL_FreeSurface(settings12iconimg);
         pos.x = 510;
@@ -1687,7 +1712,7 @@ void settings(){
         SDL_DestroyTexture(settings12icon);
 
         SDL_Surface *settings21iconimg = IMG_Load("settings21 - Copy.png");
-        if(cO){settings21iconimg = IMG_Load("settings21.png");}
+        if(cO){SDL_FreeSurface(settings21iconimg);settings21iconimg = IMG_Load("settings21.png");}
         SDL_Texture *settings21icon = SDL_CreateTextureFromSurface(renderer,settings21iconimg);
         SDL_FreeSurface(settings21iconimg);
         pos.x = 190;
@@ -1698,7 +1723,7 @@ void settings(){
         SDL_DestroyTexture(settings21icon);
 
         SDL_Surface *settings22iconimg = IMG_Load("settings22.png");
-        if(cO){settings22iconimg = IMG_Load("settings22 - Copy.png");}
+        if(cO){SDL_FreeSurface(settings22iconimg);settings22iconimg = IMG_Load("settings22 - Copy.png");}
         SDL_Texture *settings22icon = SDL_CreateTextureFromSurface(renderer,settings22iconimg);
         SDL_FreeSurface(settings22iconimg);
         pos.x = 510;
@@ -1726,6 +1751,8 @@ void settings(){
             case SDL_QUIT:
                 quit = true;
                 killSDL();
+                done = true;
+                sets = true;
                 return;
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -1737,14 +1764,20 @@ void settings(){
                     else if(mx1>510 && mx1<810 && my1>400 && my1<480){cI=1;sets=true;}
                     else if(mx1>190 && mx1<490 && my1>500 && my1<580){cO=0;sets=true;}
                     else if(mx1>510 && mx1<810 && my1>500 && my1<580){cO=1;sets=true;}
+                    else if(mx1>400 && mx1<600 && my1>320 && my1<380 && !cII){cII=1;Mix_PauseMusic();sets=true;}
+                    else if(mx1>400 && mx1<600 && my1>320 && my1<380 && cII){cII=0;Mix_PlayMusic(backgroundmusic,-1);sets=true;}
                 }
         }
         }
     }
-    main(NULL,NULL);
+    return main(NULL,NULL);
 }
 
 int main(int argc,char* argv[]){
+    HWND console;
+    AllocConsole();
+    console = FindWindowA("ConsoleWindowClass",NULL);
+    ShowWindow(console,0);
     do{
     if(!SDLrun){
         initSDL();
@@ -1828,7 +1861,7 @@ int main(int argc,char* argv[]){
                     case SDL_QUIT:
                             quit = true;
                             killSDL();
-                            return;
+                            return 0;
                         break;
                     case SDL_MOUSEBUTTONDOWN:
                         if(click.button == SDL_BUTTON_LEFT){
